@@ -1,21 +1,25 @@
 
-/* created on Sept 12, 2017 by Rudy Lee */
+/**
+ * File: c:\Users\Rudy\Desktop\html-parser\src\main\java\App.java
+ * Created Date: Tuesday, September 12th 2017, 8:03:47 pm
+ * Author: RuudyLee
+ * -----
+ * Last Modified: Fri Sep 15 2017
+ * Modified By: RuudyLee
+ * -----
+ */
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 
 public class App {
     public static void main(String[] args) throws IOException {
@@ -27,28 +31,7 @@ public class App {
 
         // Iterate through each html file
         for (File f : listOfFiles) {
-            // The values we want to pull from the html
-            SummaryPayload summaryPayload = new SummaryPayload();
-
-            // Read the html file
-            Document doc = Jsoup.parse(new File(f.getAbsolutePath()), "utf-8"); // the html file
-            Elements tables = doc.select("table[class=recordDetailFields"); // the tables
-
-            // Parse the html for the values we need
-            for (Element table : tables) {
-                Elements rows = table.select("tr");
-                for (Element e : rows) {
-                    Elements keyVals = e.select("td");
-                    String key = keyVals.get(0).text();
-                    String val = "";
-                    // if keyVals is less than 1, that means there is no value to go with the key
-                    if (keyVals.size() > 1) {
-                        val = keyVals.get(1).text();
-                    }
-                    summaryPayload.readValue(key, val);
-                }
-            }
-
+            SummaryPayload summaryPayload = new SummaryPayload(f.getAbsolutePath());
             payloads.add(summaryPayload);
         }
 
@@ -57,43 +40,46 @@ public class App {
         generateExcelFromTable(payloads, "test.xlsx");
     }
 
-    private static void generateCSVFromTable(Element table, String filename) throws IOException {
-        Elements rows = table.select("tr");
-
-        // Headers
-        // Elements ths = rows.select("th");
-        // String thstr = "";
-        // for (Element th : ths) {
-        //     thstr += th.text() + "#";
-        // }
-        // csvWriter.writeNext(thstr.split("#"));
-
-        rows.remove(0);
-        // Content
-        for (Element row : rows) {
-            String line = "";
-            Elements tds = row.select("td");
-            for (Element td : tds) {
-                line += td.text() + "#";
-            }
-            // write here
-        }
-    }
-
+    /** 
+    * Generates the product summary page in excel based on the html data (payloads)
+    * @param payloads html data
+    * @param filename output filename
+    */
     private static void generateExcelFromTable(List<SummaryPayload> payloads, String filename) throws IOException {
         String[] headers = { "Project", "Location", "Developer", "Opening Date", "Unit Sizes", "Price Range",
                 "Currently Available", "Original $PSF", "Sales for July, 2017", "No. of units Sold", "No. of units",
                 "Construction Status" };
         SXSSFWorkbook wb = new SXSSFWorkbook(100);
-        Sheet sh = wb.createSheet();
+        SXSSFSheet sh = wb.createSheet();
+
+        // Sheet description
+        sh.setDefaultRowHeightInPoints(30f);
+        sh.trackAllColumnsForAutoSizing();
+
+        // Properties for header
+        Font headerFont = wb.createFont();
+        headerFont.setFontName("Calibri Light");
+        headerFont.setFontHeightInPoints((short) 13);
+        headerFont.setBold(true);
+        XSSFCellStyle headerDescription = (XSSFCellStyle) wb.createCellStyle();
+        headerDescription.setFont(headerFont);
 
         // Write the header
         Row headerRow = sh.createRow(0);
         for (int cellnum = 0; cellnum < 12; cellnum++) {
             Cell cell = headerRow.createCell(cellnum);
-            String address = headers[cellnum];
-            cell.setCellValue(address);
+            String value = headers[cellnum];
+            cell.setCellValue(value);
+            cell.setCellStyle(headerDescription);
         }
+
+        // Properties for values
+        Font valueFont = wb.createFont();
+        valueFont.setFontName("Calibri Light");
+        valueFont.setFontHeightInPoints((short) 13);
+        XSSFCellStyle valueDescription = (XSSFCellStyle) wb.createCellStyle();
+        valueDescription.setFont(valueFont);
+        valueDescription.setWrapText(true);
 
         // Write values
         for (int i = 0; i < payloads.size(); i++) {
@@ -101,12 +87,24 @@ public class App {
             String[] payload = payloads.get(i).getAllValues();
             for (int cellnum = 0; cellnum < 12; cellnum++) {
                 Cell cell = row.createCell(cellnum);
-                String address = payload[cellnum];
-                cell.setCellValue(address);
+                String value = payload[cellnum];
+                cell.setCellValue(value);
+
+                // Bold the left-most column
+                if (cellnum == 0) {
+                    cell.setCellStyle(headerDescription);
+                } else {
+                    cell.setCellStyle(valueDescription);
+                }
             }
         }
 
-        FileOutputStream out = new FileOutputStream(filename);
+        // auto columns
+        for (int i = 0; i < 12; i++) {
+            sh.autoSizeColumn(i);
+        }
+
+        FileOutputStream out = new FileOutputStream("output/" + filename);
         wb.write(out);
         out.close();
 
