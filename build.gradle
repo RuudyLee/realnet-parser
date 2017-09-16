@@ -24,9 +24,8 @@ dependencies {
     compile 'com.google.guava:guava:22.0'
     compile 'org.jsoup:jsoup:1.10.2'
 
-// https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml
+    // https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml
     compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.16'
-
 
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'
