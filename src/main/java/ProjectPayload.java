@@ -4,13 +4,16 @@
  * Created Date: Wednesday, September 13th 2017, 12:42:29 am
  * Author: RuudyLee
  * -----
- * Last Modified: Fri Sep 15 2017
+ * Last Modified: Sun Sep 17 2017
  * Modified By: RuudyLee
  * -----
  */
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Date;
 
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -43,6 +46,7 @@ public class ProjectPayload {
     public String mMortgageCompany;
     public String mNumOfUnits;
     public String mNumOfStories;
+    public String mMaintenanceFee;
     public String mNotes;
 
     public ProjectPayload() {
@@ -68,6 +72,7 @@ public class ProjectPayload {
         mMortgageCompany = "";
         mNumOfUnits = "";
         mNumOfStories = "";
+        mMaintenanceFee = "";
         mNotes = "";
     }
 
@@ -112,12 +117,23 @@ public class ProjectPayload {
     }
 
     /**
-     * Returns all the values in the payload as a String array
+     * Returns all the values for the first half of PS tab as a String array
      * @return String array of all encapsulated values
      */
-    public String[] getAllValues() {
+    public String[] getProjectSummaryFirstHalf() {
         String[] everything = { mDevelopmentName, mLocation, mBuilder, mOpeningDate, mUnitSizes, mPriceRange,
                 mCurrentlyAvailable, mOriginalPSF, mSales, mUnitsSold, mNumberOfUnits, mConstructionStatus };
+        return everything;
+    }
+
+    /**
+     * Returns all the values for the second half of PS tab as a String array
+     * @return String array of all encapsulated values
+     */
+    public String[] getProjectSummarySecondHalf() {
+        String[] everything = { mDevelopmentName, mFirstOccupancy, mSiteStatus, mConstructionType, mArchitect,
+                mInteriorDesigner, mSalesCompany, mMortgageCompany, mNumOfUnits, mNumOfStories, mMaintenanceFee,
+                mNotes };
         return everything;
     }
 
@@ -138,7 +154,9 @@ public class ProjectPayload {
             mBuilder = val;
             break;
         case "Opening Date:":
-            mOpeningDate = val;
+            LocalDate theDate = LocalDate.parse(val);
+            DateTimeFormatter dtf = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM);
+            mOpeningDate = dtf.format(theDate);
             break;
         case "Unit Sizes (sf):":
             mUnitSizes = val;
@@ -176,6 +194,9 @@ public class ProjectPayload {
         case "Number of Storeys:":
             mNumOfStories = val;
             break;
+            case "Maintenance Fee ($/sf/m):":
+            mMaintenanceFee = val;
+            break;
         case "Notes:":
             mNotes = val;
             break;
@@ -184,10 +205,11 @@ public class ProjectPayload {
 
     /**
      * Returns a Date object so we can sort the projects by opening date
-     * @@return Date object
+     * @return Date object
      */
-    public Date getDateForSorting() {
-        return DateUtil.parseYYYYMMDDDate(mOpeningDate);
+    public LocalDate getDateForSorting() {
+        DateTimeFormatter dtf = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM);
+        return LocalDate.parse(mOpeningDate, dtf);
     }
 
     public void debugPrint() {

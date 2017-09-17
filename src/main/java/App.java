@@ -4,7 +4,7 @@
  * Created Date: Tuesday, September 12th 2017, 8:03:47 pm
  * Author: RuudyLee
  * -----
- * Last Modified: Fri Sep 15 2017
+ * Last Modified: Sun Sep 17 2017
  * Modified By: RuudyLee
  * -----
  */
@@ -17,6 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
@@ -37,11 +38,11 @@ public class App {
         }
 
         payloads.sort(new Comparator<ProjectPayload>() {
-			@Override
-			public int compare(ProjectPayload o1, ProjectPayload o2) {
+            @Override
+            public int compare(ProjectPayload o1, ProjectPayload o2) {
                 // We want it in reverse order (newest to oldest)
-				return o2.getDateForSorting().compareTo(o1.getDateForSorting());
-			}
+                return o2.getDateForSorting().compareTo(o1.getDateForSorting());
+            }
         });
 
         // testing
@@ -107,7 +108,7 @@ public class App {
         // Write values
         for (int i = 0; i < payloads.size(); i++) {
             Row row = sh.createRow(i + 1);
-            String[] payload = payloads.get(i).getAllValues();
+            String[] payload = payloads.get(i).getProjectSummaryFirstHalf();
             for (int cellnum = 0; cellnum < NUM_COLUMNS; cellnum++) {
                 Cell cell = row.createCell(cellnum);
                 cell.setCellValue(payload[cellnum]);
@@ -130,6 +131,22 @@ public class App {
             cell.setCellStyle(headerDescription);
         }
 
+        // Write values
+        for (int i = 0; i < payloads.size(); i++) {
+            Row row = sh.createRow(startingRow + i + 1); // Start after the first half
+            String[] payload = payloads.get(i).getProjectSummarySecondHalf();
+            for (int cellnum = 0; cellnum < NUM_COLUMNS; cellnum++) {
+                Cell cell = row.createCell(cellnum);
+                cell.setCellValue(payload[cellnum]);
+                // Bold the left-most column
+                if (cellnum == 0) {
+                    cell.setCellStyle(headerDescription);
+                } else {
+                    cell.setCellStyle(valueDescription);
+                }
+            }
+        }
+
         //////////////////////////////////////////
 
         // auto-fit columns
@@ -138,7 +155,9 @@ public class App {
         }
 
         // output the excel file
-        FileOutputStream out = new FileOutputStream("output/" + filename);
+        File outDir = new File("output");
+        outDir.mkdirs();
+        FileOutputStream out = new FileOutputStream(outDir.getPath() + "/" + filename);
         wb.write(out);
         out.close();
 
